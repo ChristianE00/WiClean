@@ -2,6 +2,8 @@
 import pandas as pd
 import re
 import sys
+import os
+import json
 from datasets import load_dataset
 
 
@@ -12,6 +14,16 @@ class Graph:
         self.graph = {}
         self.relationships = []
         self.dataset = None
+
+        if os.path.exists('./graph.json'):
+            print('graph exists')
+            with open('graph.json') as g:
+                self.graph = json.load(g)
+            print(f"Number of nodes in the graph: {len(self.graph)}")
+            total_relationships = sum(len(node['relationships']) for node in self.graph.values())
+            print(f"Total number of relationships in the graph: {total_relationships}")
+        else:
+            print('graph does NOT exist')
 
     def train_small_graph(self):
         '''
@@ -69,6 +81,12 @@ class Graph:
         # Create interlinks between nodes
         print(' Graph size: ', len(self.graph))
         for entity_id, node in self.graph.items():
+            '''
+            if COUNTER > 10:
+                print('ENDING')
+                self.save_graph()
+                return
+            '''
             entity_text = node['text']
             entity_mentions = self.extract_entity_mentions(entity_text, self.graph)
             # Create relationships with the mentioned entities
@@ -80,11 +98,18 @@ class Graph:
                         }
                         node['relationships'].append(relationship)
 
-            print(f"Number of nodes in the graph: {len(self.graph)}")
-            total_relationships = sum(len(node['relationships']) for node in self.graph.values())
-            print(f"Total number of relationships in the graph: {total_relationships}")
+        print(f"Number of nodes in the graph: {len(self.graph)}")
+        total_relationships = sum(len(node['relationships']) for node in self.graph.values())
+        print(f"Total number of relationships in the graph: {total_relationships}")
 
-    def standardize_entity_name(title):
+    def save_graph(self):
+        print('saving graph...')
+        with open('graph.json', 'w') as file:
+            json.dump(self.graph, file)
+        print('graph saved successfully')
+
+
+    def standardize_entity_name(self, title):
         '''Standardize entity names
         '''
 
@@ -115,12 +140,16 @@ class Graph:
 if __name__ == '__main__':
     graph = Graph()    
     input = sys.argv[1]
-
-    if input == '--medium':
-        graph.train_medium_graph()
-    elif input == '--large':
-        graph.train_large_graph()
+    if len(graph.graph) == 0:
+        print('Creating new graph')
+        if input == '--medium':
+            graph.train_medium_graph()
+        elif input == '--large':
+            graph.train_large_graph()
+        else:
+            graph.train_small_graph()
+        graph.train()
     else:
-        graph.train_small_graph()
-    graph.train()
+        print('graph loaded from existing file')
+
 

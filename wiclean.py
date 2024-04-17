@@ -8,6 +8,7 @@ from datasets import load_dataset
 
 
 COUNTER = 0
+DEBUG_MODE = False
 
 class Graph:
     def __init__(self):
@@ -98,9 +99,9 @@ class Graph:
                         }
                         node['relationships'].append(relationship)
 
-        print(f"Number of nodes in the graph: {len(self.graph)}")
+        print(f"Number of nodes in the graph: {len(self.graph)}") if DEBUG_MODE else None
         total_relationships = sum(len(node['relationships']) for node in self.graph.values())
-        print(f"Total number of relationships in the graph: {total_relationships}")
+        print(f"Total number of relationships in the graph: {total_relationships}") if DEBUG_MODE else None
 
     def save_graph(self):
         print('saving graph...')
@@ -138,18 +139,34 @@ class Graph:
 
 
 if __name__ == '__main__':
-    graph = Graph()    
-    input = sys.argv[1]
-    if len(graph.graph) == 0:
-        print('Creating new graph')
-        if input == '--medium':
-            graph.train_medium_graph()
-        elif input == '--large':
-            graph.train_large_graph()
-        else:
-            graph.train_small_graph()
-        graph.train()
-    else:
+    graph = Graph()  
+    graph_size = 'small'
+    graph_loaded_from_existing_file = False
+    if len(graph.graph) > 0:
+        graph_loaded_from_existing_file = True
+    for arg in sys.argv[1:]:
+        if not graph_loaded_from_existing_file:
+            if arg.lower().strip() == '--medium':
+                graph_size = 'medium'
+            elif arg.lower().strip() == '--large':
+                graph_size = 'large'
+        if arg.lower().strip() == '--debug':
+            DEBUG_MODE = True
+            print('Debug mode enabled')
+    if graph_loaded_from_existing_file:
         print('graph loaded from existing file')
 
+        '''
+        if len(graph.graph) == 0:
+            print('Creating new graph')
+            if input == '--medium':
+                graph.train_medium_graph()
+            elif input == '--large':
+                graph.train_large_graph()
+            else:
+                graph.train_small_graph()
+            graph.train()
+        else:
+            print('graph loaded from existing file')
+        '''
 

@@ -5,6 +5,7 @@ import sys
 import os
 import json
 from datasets import load_dataset
+from SPARQLWrapper import SPARQLWrapper, JSON 
 
 
 COUNTER = 0
@@ -25,6 +26,46 @@ class Graph:
             print(f"Total number of relationships in the graph: {total_relationships}")
         else:
             print('graph does NOT exist')
+
+    def save_graph(self, filename='graph_DBpedia.json'):
+        print(f'Saving graph to {filename}...')
+        with open(filename, 'w') as file:
+            json.dump(self.graph, file)
+        print(f'Graph saved successfully to {filename}')
+
+    def fetch_entity_types(self):
+        sparql = SPARQLWrapper("http://dbpedia.org/sparql")
+
+        i = 0
+        for entity_id, node in self.graph.items():
+            i += 1
+            entity_title = node['title']
+
+            query = f'''
+                SELECT DISTINCT ?type WHERE {{
+                    <http://dbpedia.org/resource/{entity_title}> a ?type .
+                }}
+            '''
+
+            sparql.setQuery(query)
+            sparql.setReturnFormat(JSON)
+
+            try:
+                results = sparql.query().convert()
+                types = []
+                for result in results['results']['bindings']:
+                    type_uri = result['type']['value']
+                    type_label = type_uri.split('/')[-1]
+                    types.append(type_label)
+
+                node['types'] = types
+                print('fetch entity successful: ', i)
+
+            except Exception as e:
+                print(f"Error fetching entity types for {entity_title}: {str(e)}")
+
+
+
 
     def train_small_graph(self):
         '''
@@ -103,11 +144,13 @@ class Graph:
         total_relationships = sum(len(node['relationships']) for node in self.graph.values())
         print(f"Total number of relationships in the graph: {total_relationships}") if DEBUG_MODE else None
 
+    '''
     def save_graph(self):
         print('saving graph...')
         with open('graph.json', 'w') as file:
             json.dump(self.graph, file)
         print('graph saved successfully')
+    '''
 
 
     def standardize_entity_name(self, title):
@@ -153,20 +196,22 @@ if __name__ == '__main__':
         if arg.lower().strip() == '--debug':
             DEBUG_MODE = True
             print('Debug mode enabled')
-    if graph_loaded_from_existing_file:
+
+    if not graph_loaded_from_existing_file:
+        if graph_size == '--medium':
+            graph.train_small_graph()
+        elif graph_size == '--large':
+            graph.train_large_graph()
+        # Default to small graph
+        else:
+            graph.train_small_graph()
+    else:
         print('graph loaded from existing file')
 
-        '''
-        if len(graph.graph) == 0:
-            print('Creating new graph')
-            if input == '--medium':
-                graph.train_medium_graph()
-            elif input == '--large':
-                graph.train_large_graph()
-            else:
-                graph.train_small_graph()
-            graph.train()
-        else:
-            print('graph loaded from existing file')
-        '''
+    # Enhance graph from DBpedia
+    graph.fetch_entity_types()
+    graph.save_graph('DBPedia_enhanced_graph')
+        
+        
+
 

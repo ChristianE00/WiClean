@@ -6,12 +6,24 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+import random
+import datetime
 
 def save_graph(results):
     print('Saving graph...')
     with open('graph.json', 'w') as file:
         json.dump(results, file)
     print('Graph saved successfully')
+
+def add_inconsistencies(data):
+    # Add inconsistencies
+    for row in data:
+        if random.random() < 0.5:  # 50% chance to add an inconsistency
+            date_of_death = datetime.datetime.now() - datetime.timedelta(days=random.randint(91, 365))
+            row[2] = date_of_death.strftime("%Y-%m-%d")  # Update the date format to match the original data
+            row.append(1)  # Add a label indicating an inconsistency
+        else:
+            row.append(0)  # Add a label indicating consistency
 
 endpoint_url = "https://query.wikidata.org/sparql"
 sparql = SPARQLWrapper(endpoint_url)
@@ -29,9 +41,6 @@ sparql.setQuery(query)
 sparql.setReturnFormat(JSON)
 results = sparql.query().convert()
 
-# Save the graph
-save_graph(results)
-
 # Preprocess the query results
 data = []
 for result in results["results"]["bindings"]:
@@ -41,8 +50,11 @@ for result in results["results"]["bindings"]:
     date_of_death = date_of_death_uri.split("/")[-1]  # Extract the date from the URI
     data.append([person, spouse, date_of_death])
 
+# Add artificial inconsistencies
+add_inconsistencies(data)
+
 # Create a DataFrame
-df = pd.DataFrame(data, columns=["person", "spouse", "date_of_death"])
+df = pd.DataFrame(data, columns=["person", "spouse", "date_of_death", "inconsistent"])
 
 # Feature engineering
 df["date_of_death"] = pd.to_datetime(df["date_of_death"], format="%Y-%m-%d", errors="coerce")
@@ -51,10 +63,6 @@ df["days_since_death"] = (pd.Timestamp.now() - df["date_of_death"]).dt.days
 # Handle missing or invalid dates
 df["date_of_death"] = df["date_of_death"].fillna(pd.NaT)
 df["days_since_death"] = df["days_since_death"].fillna(0)
-
-# Define the classification problem based on a condition
-#df["inconsistent"] = (df["days_since_death"] > 180).astype(int)  # interlinks   older than 6 months as inconsistent
-df["inconsistent"] = (df["days_since_death"] > 90).astype(int)  #  interlinks older than 3 months as inconsistent
 
 # Split the data
 X = df[["days_since_death"]]

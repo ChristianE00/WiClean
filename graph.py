@@ -10,11 +10,13 @@ from sklearn.preprocessing import OneHotEncoder
 import random
 import datetime
 
+'''
 def save_graph(results):
     print('Saving graph...')
     with open('graph.json', 'w') as file:
         json.dump(results, file)
     print('Graph saved successfully')
+'''
 
 def add_inconsistencies(data):
     # Add inconsistencies randomly

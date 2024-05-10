@@ -1,7 +1,7 @@
 
 # Running with Docker
 
-#### Note: Docker should only use small queries as large queires will crash the kernel.
+#### Note: Docker should only use small queries as large queries will crash the kernel.
 
 1. Open Docker
 2. cd into the project directory and run the following command to lauch the container:

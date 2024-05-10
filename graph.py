@@ -1,5 +1,4 @@
 from SPARQLWrapper import SPARQLWrapper, JSON
-import json
 import pandas as pd
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.tree import DecisionTreeClassifier
@@ -8,7 +7,6 @@ from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from sklearn.preprocessing import OneHotEncoder
 import random
-import datetime
 
 '''
 def save_graph(results):
@@ -35,7 +33,7 @@ query = """
         ?spouse wdt:P570 ?dateOfDeath .  # P570 represents the "date of death" property
         FILTER (?dateOfDeath < NOW())
     }
-    LIMIT 5000
+    LIMIT 20000
 """
 
 sparql.setQuery(query)
